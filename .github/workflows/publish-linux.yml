@@ -1,0 +1,78 @@
+name: Stage Linux release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Linux workflow run to release
+        required: true
+        type: string
+      version:
+        description: App version, without v
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: stage-linux-release
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILD_RUN: ${{ inputs.run_id }}
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate the tested source build
+        id: build
+        run: |
+          set -euo pipefail
+          [[ "$BUILD_RUN" =~ ^[0-9]+$ ]]
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" > "$RUNNER_TEMP/build.json"
+          python3 - <<'PY'
+          import json,os,re
+          from pathlib import Path
+          r=json.loads((Path(os.environ['RUNNER_TEMP'])/'build.json').read_text())
+          assert r['path']=='.github/workflows/linux.yml'
+          assert r['conclusion']=='success' and r['status']=='completed'
+          assert r['event'] in ('push','workflow_dispatch') and r['head_branch']=='main'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert re.fullmatch('[0-9a-f]{40}',r['head_sha'])
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('sha='+r['head_sha']+'\n')
+          PY
+      - name: Verify source version
+        env:
+          BUILD_SHA: ${{ steps.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin "$BUILD_SHA"
+          version=$(git show "$BUILD_SHA:package.json" | jq -r .version)
+          test "$version" = "$RELEASE_VERSION"
+      - uses: actions/download-artifact@v4
+        with:
+          name: Rabbit-linux-x64
+          path: dist-release
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Install package inspection tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+      - name: Verify packages
+        run: python3 scripts/check-linux-packages.py --directory dist-release --version "$RELEASE_VERSION"
+      - name: Create an unpublished draft with the verified packages
+        env:
+          BUILD_SHA: ${{ steps.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/notes.md" <<'EOF'
+          Native Rabbit for Linux. This draft contains verified packages from the successful Linux build. Desktop smoke testing is required before publication.
+          EOF
+          gh release create "v$RELEASE_VERSION" dist-release/*.AppImage dist-release/*.deb dist-release/*.rpm dist-release/SHA256SUMS-linux.txt --repo "$GITHUB_REPOSITORY" --target "$BUILD_SHA" --draft --title "Rabbit $RELEASE_VERSION for Linux" --notes-file "$RUNNER_TEMP/notes.md"
