@@ -28,8 +28,8 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Rabbit and yt-dlp versions (Settings → Tools), and Windows version
-      placeholder: Rabbit 0.7.0, yt-dlp 2026.10.21, Windows 11 24H2
+      description: Rabbit and yt-dlp versions (Settings → Tools), and Linux distribution / desktop session
+      placeholder: Rabbit 0.7.1, yt-dlp 2026.10.21, CachyOS / KDE Wayland
     validations:
       required: true
   - type: textarea

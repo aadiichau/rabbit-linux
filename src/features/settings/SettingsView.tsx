@@ -48,7 +48,7 @@ export default function SettingsView() {
       </Row>
 
       <div className="t-micro mt-8 mb-1">Behaviour</div>
-      <Row label="Notifications" hint="A Windows notification when a download finishes or fails while Rabbit isn't in front.">
+      <Row label="Notifications" hint="A desktop notification when a download finishes or fails while Rabbit isn't in front.">
         <Switch label="Notifications" on={settings.notifications} onChange={(v) => save({ notifications: v })} />
       </Row>
 

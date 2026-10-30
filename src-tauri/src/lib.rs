@@ -51,7 +51,7 @@ pub fn run() {
                     s
                 }
             };
-            let tools = sys::tools::Tools::discover();
+            let tools = sys::tools::Tools::discover_in(Some(&app.path().resource_dir()?));
             tracing::info!(?tools, "tools discovered");
             let manager = engine::manager::Manager::new(store.clone(), settings, tools)?;
             manager.attach_app(app.handle().clone());

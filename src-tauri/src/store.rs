@@ -43,7 +43,7 @@ pub struct Settings {
     pub download_dir: PathBuf,
     pub max_concurrent: usize,
     pub max_segments: usize,
-    /// Windows notification when a download finishes or fails while Rabbit isn't focused.
+    /// Desktop notification when a download finishes or fails while Rabbit isn't focused.
     #[serde(default = "yes")]
     pub notifications: bool,
     /// Release channel used for yt-dlp update checks.

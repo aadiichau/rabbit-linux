@@ -19,6 +19,22 @@ use crate::engine::http::Counters;
 use crate::error::{AppError, AppResult};
 use crate::sys::process::{command, spawn_contained};
 
+/// Official standalone release asset for the running platform.
+pub fn asset_name() -> &'static str {
+    if cfg!(windows) { "yt-dlp.exe" }
+    else if cfg!(target_arch = "aarch64") { "yt-dlp_linux_aarch64" }
+    else { "yt-dlp_linux" }
+}
+
+pub fn installed_filename(tag: &str) -> String {
+    super::tools::executable_name(&format!("yt-dlp-{tag}"))
+}
+
+fn valid_filename(name: &str) -> bool {
+    let Some(tag) = name.strip_prefix("yt-dlp-").and_then(|n| n.strip_suffix(std::env::consts::EXE_SUFFIX)) else { return false };
+    valid_tag(tag)
+}
+
 const MAX_BINARY: u64 = 150 * 1024 * 1024;
 const MAX_SUMS: usize = 64 * 1024;
 const MANIFEST: &str = "active.json";
@@ -111,11 +127,11 @@ fn now_ms() -> i64 {
 pub fn active(dir: &Path) -> Option<(Installed, PathBuf)> {
     let m: Installed = serde_json::from_slice(&std::fs::read(dir.join(MANIFEST)).ok()?).ok()?;
     // The manifest may only name a file inside this folder.
-    if m.file.contains(['/', '\\']) || !m.file.starts_with("yt-dlp-") || !m.file.ends_with(".exe") {
+    if m.file.contains(['/', '\\']) || !valid_filename(&m.file) {
         return None;
     }
     let path = dir.join(&m.file);
-    path.is_file().then_some((m, path))
+    super::tools::is_executable(&path).then_some((m, path))
 }
 
 /// Stops using the updated copy; the bundled yt-dlp takes over and updated copies are deleted
@@ -206,16 +222,16 @@ pub async fn install(client: &reqwest::Client, src: &Source, channel: Channel, t
         AppError::Http(404) => AppError::NotFound(format!("yt-dlp {tag} isn't published on the {channel:?} channel. Check for updates again.").replace("Stable", "stable").replace("Nightly", "nightly")),
         other => other,
     })?;
-    let expected = parse_sums(&sums, "yt-dlp.exe").ok_or_else(|| AppError::Verification("the release's checksum file doesn't list yt-dlp.exe".into()))?;
+    let expected = parse_sums(&sums, asset_name()).ok_or_else(|| AppError::Verification(format!("the release's checksum file doesn't list {}", asset_name())))?;
 
     tokio::fs::create_dir_all(dir).await?;
-    let file = format!("yt-dlp-{tag}.exe");
+    let file = installed_filename(tag);
     let final_path = dir.join(&file);
     let tmp = dir.join(format!("{file}.download"));
 
     let result = async {
         let resp = tokio::select! {
-            r = client.get(format!("{base}/yt-dlp.exe")).header(reqwest::header::USER_AGENT, user_agent()).send() => r?,
+            r = client.get(format!("{base}/{}", asset_name())).header(reqwest::header::USER_AGENT, user_agent()).send() => r?,
             _ = cancel.cancelled() => return Err(AppError::Cancelled),
         };
         if !resp.status().is_success() {
@@ -275,6 +291,11 @@ pub async fn install(client: &reqwest::Client, src: &Source, channel: Channel, t
         let _ = tokio::fs::remove_file(&final_path).await;
     }
     tokio::fs::rename(&tmp, &final_path).await?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        tokio::fs::set_permissions(&final_path, std::fs::Permissions::from_mode(0o755)).await?;
+    }
     let reported = match run_version(&final_path).await {
         Ok(v) => v,
         Err(e) => {
@@ -302,7 +323,7 @@ fn remove_stale(dir: &Path, keep: &str) {
     if let Ok(rd) = std::fs::read_dir(dir) {
         for e in rd.flatten() {
             let name = e.file_name().to_string_lossy().to_string();
-            if name.starts_with("yt-dlp-") && (name.ends_with(".exe") || name.ends_with(".download")) && name != keep {
+            if (valid_filename(&name) || name.strip_suffix(".download").is_some_and(valid_filename)) && name != keep {
                 let _ = std::fs::remove_file(e.path());
             }
         }
@@ -345,8 +366,15 @@ mod tests {
     #[test]
     fn manifest_cannot_point_outside_its_folder() {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("yt-dlp-2026.10.21.exe"), b"x").unwrap();
-        let good = Installed { version: "2026.10.21".into(), file: "yt-dlp-2026.10.21.exe".into(), sha256: "0".repeat(64), channel: Channel::Stable, installed_at: 0 };
+        let file = installed_filename("2026.10.21");
+        let path = dir.path().join(&file);
+        std::fs::write(&path, b"x").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let good = Installed { version: "2026.10.21".into(), file, sha256: "0".repeat(64), channel: Channel::Stable, installed_at: 0 };
         std::fs::write(dir.path().join(MANIFEST), serde_json::to_vec(&good).unwrap()).unwrap();
         assert!(active(dir.path()).is_some());
         for bad in ["..\\evil.exe", "C:\\Windows\\notepad.exe", "yt-dlp-x.exe.bat", "other.exe"] {

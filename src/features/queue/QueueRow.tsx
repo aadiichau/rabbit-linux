@@ -146,7 +146,7 @@ export const QueueRow = memo(function QueueRow({ id }: { id: string }) {
               <button className="btn btn-icon" title="Open" aria-label="Open file" onClick={() => act(() => api.openTask(id, false))}>
                 <Icon name="play" />
               </button>
-              <button className="btn btn-icon" title="Reveal in Explorer" aria-label="Reveal in Explorer" onClick={() => act(() => api.openTask(id, true))}>
+              <button className="btn btn-icon" title="Show in folder" aria-label="Show in folder" onClick={() => act(() => api.openTask(id, true))}>
                 <Icon name="folder" />
               </button>
             </>

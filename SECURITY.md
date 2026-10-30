@@ -7,7 +7,7 @@ Only the latest release receives fixes. Please update before reporting.
 ## Reporting a vulnerability
 
 Please **don't open a public issue** for security problems. Use GitHub's private reporting instead:
-[Report a vulnerability](https://github.com/aadiichau/rabbit/security/advisories/new).
+[Report a vulnerability](https://github.com/aadiichau/rabbit-linux/security/advisories/new).
 
 Include what you found, how to reproduce it, and the Rabbit version. Fixes are released as a new version, with
 credit to you unless you prefer otherwise.
@@ -22,7 +22,6 @@ credit to you unless you prefer otherwise.
 
 ## Installer integrity
 
-Release installers are built by GitHub Actions from the tagged source, and each release includes
-`SHA256SUMS.txt`. The installer is not code-signed yet, so Windows SmartScreen may warn about an unknown
-publisher; verify the SHA-256 if in doubt. Only download Rabbit from this repository's Releases page or its
-website.
+Linux release packages are built by GitHub Actions from the release source. Each release includes
+`SHA256SUMS-linux.txt`; check it against the files you download. Download Rabbit Linux only from
+this repository's Releases page.

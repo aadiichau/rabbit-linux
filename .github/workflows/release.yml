@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   windows:
+    if: github.repository == 'aadiichau/rabbit'
     name: Windows x64 installer
     runs-on: windows-latest
     steps:

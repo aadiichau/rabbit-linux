@@ -158,7 +158,7 @@ export default function LibraryView() {
                   <span className="t-data text-fg-3">{relativeDate(it.completedAt)}</span>
                   <div className="flex justify-end gap-0.5 opacity-60 group-hover:opacity-100 group-focus-within:opacity-100">
                     <button className="btn btn-icon" title="Open" aria-label="Open" disabled={!it.fileExists} onClick={() => run(() => api.libraryOpen(it.id, false))}><Icon name="play" /></button>
-                    <button className="btn btn-icon" title="Reveal in Explorer" aria-label="Reveal in Explorer" disabled={!it.fileExists} onClick={() => run(() => api.libraryOpen(it.id, true))}><Icon name="folder" /></button>
+                    <button className="btn btn-icon" title="Show in folder" aria-label="Show in folder" disabled={!it.fileExists} onClick={() => run(() => api.libraryOpen(it.id, true))}><Icon name="folder" /></button>
                     <button className="btn btn-icon" title="Copy source URL" aria-label="Copy source URL" onClick={() => run(() => writeText(it.sourceUrl), "Source URL copied")}><Icon name="copy" /></button>
                     <button className="btn btn-icon" title="Remove…" aria-label="Remove" onClick={() => setConfirm(it)}><Icon name="trash" /></button>
                   </div>

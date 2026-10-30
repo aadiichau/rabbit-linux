@@ -6,18 +6,17 @@
 
 **Paste a link. Get the real file.**
 
-A fast, private media downloader for Windows. Rabbit downloads public videos, audio and images from YouTube,
+A fast, private media downloader for Linux. Rabbit downloads public videos, audio and images from YouTube,
 Bilibili, Kuaishou, RedNote, Instagram, Facebook, X, Pinterest and more — in the best quality the source offers —
 and checks every file it saves.
 
-[![Latest release](https://img.shields.io/github/v/release/aadiichau/rabbit?label=release&color=e5a23c)](https://github.com/aadiichau/rabbit/releases/latest)
-[![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Faadiichau.github.io%2Frabbit%2Fbadge.json)](https://aadiichau.github.io/rabbit/#stats)
-[![CI](https://github.com/aadiichau/rabbit/actions/workflows/ci.yml/badge.svg)](https://github.com/aadiichau/rabbit/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/aadiichau/rabbit-linux?label=release&color=e5a23c)](https://github.com/aadiichau/rabbit-linux/releases/latest)
+[![CI](https://github.com/aadiichau/rabbit-linux/actions/workflows/ci.yml/badge.svg)](https://github.com/aadiichau/rabbit-linux/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2f333a)](LICENSE)
 
-### [⬇ Download for Windows](https://github.com/aadiichau/rabbit/releases/latest) · [Website](https://aadiichau.github.io/rabbit/) · [Changelog](CHANGELOG.md)
+### [⬇ Download for Linux](https://github.com/aadiichau/rabbit-linux/releases/latest) · [Windows app](https://github.com/aadiichau/rabbit) · [Changelog](CHANGELOG.md)
 
-<sub>Windows 10 / 11 · 64-bit · installs without admin rights</sub>
+<sub>Linux x86_64 · AppImage, Debian and RPM packages · same Rabbit interface and download engine</sub>
 
 <img src="site/assets/rabbit-analyze-4k.webp" width="900" alt="Rabbit analyzing a YouTube link: twelve video options from 2160p60 to 144p with container, codec, frame rate and size, and 1080p60 H.264 recommended.">
 
@@ -69,30 +68,33 @@ Other sites go through yt-dlp's generic support, with no promise.
 
 ## Install
 
-Each [release](https://github.com/aadiichau/rabbit/releases/latest) has two downloads:
+Download the Linux package from [Releases](https://github.com/aadiichau/rabbit-linux/releases/latest):
 
 | Download | For |
 |---|---|
-| `Rabbit_<version>_x64-setup.exe` | **Installer (recommended).** Installs for your user only (`%LOCALAPPDATA%\Rabbit`), no administrator rights, Start menu entry, uninstall from **Settings → Apps**. Adds WebView2 on Windows 10 if it's missing. |
-| `Rabbit_<version>_x64-portable.zip` | **Portable.** No installation: unzip anywhere (even a USB drive) and run `rabbit.exe`. The library, settings and yt-dlp updates stay in a `data` folder inside it; delete the folder to remove Rabbit. Needs WebView2, which Windows 11 includes. |
+| `Rabbit_0.7.1_amd64.AppImage` | **CachyOS, Arch and other x86_64 Linux desktops.** Make it executable and run it. |
+| `Rabbit_0.7.1_amd64.deb` | Ubuntu 22.04+ and compatible Debian-based distributions. |
+| `Rabbit-0.7.1-1.x86_64.rpm` | Compatible RPM-based distributions. |
+| `SHA256SUMS-linux.txt` | SHA-256 checksums for all release downloads. |
 
-*(Optional)* Check a download against the release's `SHA256SUMS.txt`:
+For CachyOS / Arch:
 
-```powershell
-Get-FileHash .\Rabbit_*_x64-setup.exe
+```sh
+chmod +x Rabbit_0.7.1_amd64.AppImage
+./Rabbit_0.7.1_amd64.AppImage
 ```
 
-Uninstalling never touches your downloaded files.
+If FUSE is unavailable, run `./Rabbit_0.7.1_amd64.AppImage --appimage-extract-and-run`.
+Check downloads with `sha256sum --check SHA256SUMS-linux.txt` from the folder containing the packages.
 
-**Requirements:** Windows 10 or 11, 64-bit. Microsoft Edge WebView2 is part of Windows 11; on Windows 10 the
-installer downloads it if it's missing.
+The packages include Linux yt-dlp, FFmpeg and FFprobe. Keep Node.js 24+ or Deno available for
+YouTube JavaScript challenges. GTK3 and WebKitGTK 4.1 are required for native packages; AppImage bundles
+its GUI libraries. Packages are built on Ubuntu 22.04; a glibc-based Linux desktop is required.
+Settings, library and tool updates live under `~/.local/share/com.rabbit.app` (or `$XDG_DATA_HOME`).
+Downloaded files are never deleted by uninstalling Rabbit.
 
-### "Windows protected your PC"
-
-The installer is not code-signed yet, so Microsoft Defender SmartScreen may warn that the publisher is unknown.
-That warning is about the missing signature, not a detected threat. If you trust this repository, choose
-**More info → Run anyway**; if you'd rather check first, compare the SHA-256 as above. Rabbit is not verified or
-endorsed by Microsoft.
+See [Linux setup and build instructions](docs/LINUX.md) and [test results](docs/LINUX_TEST_RESULTS.md).
+For Windows installers, use the [original Rabbit repository](https://github.com/aadiichau/rabbit).
 
 ## FAQ
 
@@ -116,20 +118,22 @@ your account already has ([design notes](docs/DESIGN_SIGNED_IN_SESSIONS.md)).
 
 <details><summary><b>Does Rabbit update itself?</b></summary>
 
-No. Download new versions from the [Releases page](https://github.com/aadiichau/rabbit/releases). The bundled
+No. Download new versions from the [Releases page](https://github.com/aadiichau/rabbit-linux/releases). The bundled
 yt-dlp can be updated from Settings → Tools when you choose; each download is checked against its published
 SHA-256 first.
 </details>
 
-<details><summary><b>Is there a macOS or Linux version?</b></summary>
+<details><summary><b>Is this the same app as Rabbit for Windows?</b></summary>
 
-Not yet. Rabbit is built with Tauri, so it's possible, but only Windows is built and tested today.
+Yes. This Linux port shares the interface, download engine, extractors, library and settings with
+[the original Rabbit](https://github.com/aadiichau/rabbit). Platform-specific code handles Linux tools,
+process cancellation, Firefox profiles and desktop integration. No macOS build is provided.
 </details>
 
 <details><summary><b>A link doesn't work. What should I do?</b></summary>
 
 Sites change often. Update yt-dlp in Settings → Tools and try again. If it still fails,
-[open an issue](https://github.com/aadiichau/rabbit/issues/new/choose) with the message Rabbit shows. Please don't
+[open an issue](https://github.com/aadiichau/rabbit-linux/issues/new/choose) with the message Rabbit shows. Please don't
 post links to private content or anything that identifies you.
 </details>
 
@@ -141,16 +145,17 @@ save. Rabbit is a tool; how you use it is your responsibility.
 
 ## Build from source
 
-Requirements: Windows 10/11 x64, [Rust](https://rustup.rs/) (stable, MSVC), Node.js 24, and the
-[Tauri prerequisites](https://tauri.app/start/prerequisites/) (Visual Studio Build Tools with the C++ workload).
+Install Rust, Node.js 24+, Python 3 and the [Linux build prerequisites](docs/LINUX.md), then:
 
-```powershell
-git clone https://github.com/aadiichau/rabbit.git
-cd rabbit
-./scripts/fetch-sidecars.ps1   # pinned yt-dlp + FFmpeg builds, SHA-256 verified
+```sh
+git clone https://github.com/aadiichau/rabbit-linux.git
+cd rabbit-linux
+python3 scripts/fetch-sidecars-linux.py  # pinned native tools, SHA-256 verified
 npm ci
-npm run tauri dev               # run in development
-npm run tauri build -- --bundles nsis   # build the installer
+npm run tauri dev
+# Build a Linux package:
+node scripts/third-party-notices.mjs
+npm run tauri build -- --bundles appimage
 ```
 
 Tests: `npm test` (frontend), `cargo test` in `src-tauri` (offline suites). Live-network tests are marked
@@ -163,9 +168,9 @@ Documentation: [architecture](docs/ARCHITECTURE.md) · [extractors](docs/EXTRACT
 ## Credits and licence
 
 Rabbit is released under the [MIT License](LICENSE). It bundles [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-(Unlicense) and [FFmpeg](https://ffmpeg.org/) (LGPL-3.0-or-later, shared build by
+(Unlicense) and [FFmpeg](https://ffmpeg.org/) (LGPL-3.0-or-later, static Linux build by
 [BtbN](https://github.com/BtbN/FFmpeg-Builds)), which run as separate programs; their licences and the FFmpeg
-source pointer are installed under `licenses\`. Built with [Tauri](https://tauri.app/), React and IBM Plex (OFL).
+source pointer are installed under the app resources (`licenses/` and `tools/`). Built with [Tauri](https://tauri.app/), React and IBM Plex (OFL).
 All dependencies: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Screenshots show Big Buck Bunny, Sintel, Spring and Tears of Steel by the Blender Foundation (CC BY) and a photo by

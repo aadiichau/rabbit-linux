@@ -83,7 +83,7 @@ fn open(app: &AppHandle, path: PathBuf, reveal: bool) -> AppResult<()> {
         return Err(AppError::NotFound("The file was moved or deleted.".into()));
     }
     let r = if reveal { app.opener().reveal_item_in_dir(&path) } else { app.opener().open_path(path.to_string_lossy(), None::<&str>) };
-    r.map_err(|e| AppError::Tool(format!("Windows couldn't open it: {e}")))
+    r.map_err(|e| AppError::Tool(format!("Couldn't open it: {e}")))
 }
 
 #[tauri::command]

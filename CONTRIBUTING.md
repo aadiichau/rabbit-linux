@@ -57,3 +57,8 @@ By contributing you agree that your contribution is licensed under the MIT Licen
    **draft** release with the installer and `SHA256SUMS.txt`.
 3. Install and test the draft's installer, paste the changelog entry into the release notes, then publish it.
    The website and download counter update automatically.
+
+## Linux
+
+See [Linux development and packaging](docs/LINUX.md). Linux changes share the existing UI and engine;
+keep OS-specific dependencies behind target guards and preserve Windows behavior.

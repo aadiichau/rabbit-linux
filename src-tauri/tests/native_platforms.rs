@@ -28,7 +28,7 @@ fn rednote_video() -> Option<String> {
 
 fn tools() -> Tools {
     let mut t = Tools::discover();
-    t.ytdlp = Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("binaries/yt-dlp-x86_64-pc-windows-msvc.exe"));
+    t.ytdlp = Some(Path::new(env!("CARGO_MANIFEST_DIR")).join(if cfg!(windows) { "binaries/yt-dlp-x86_64-pc-windows-msvc.exe" } else { "binaries/linux/yt-dlp" }));
     t
 }
 

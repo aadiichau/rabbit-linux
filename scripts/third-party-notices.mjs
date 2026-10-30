@@ -1,5 +1,5 @@
 // Generates THIRD_PARTY_NOTICES.md: bundled programs, plus every Rust crate (normal dependencies
-// reachable from `rabbit` on Windows) and npm package (non-dev, from package-lock.json) that ships
+// reachable from `rabbit` on the build platform) and npm package (non-dev, from package-lock.json) that ships
 // in Rabbit, with its declared license. Usage: node scripts/third-party-notices.mjs
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -7,8 +7,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const target = process.env.CARGO_BUILD_TARGET ?? execFileSync("rustc", ["-vV"], { encoding: "utf8" }).match(/^host: (.+)$/m)[1];
+const linux = target.includes("linux");
 const meta = JSON.parse(
-  execFileSync("cargo", ["metadata", "--format-version", "1", "--filter-platform", "x86_64-pc-windows-msvc", "--manifest-path", join(root, "src-tauri", "Cargo.toml")], {
+  execFileSync("cargo", ["metadata", "--format-version", "1", "--filter-platform", target, "--manifest-path", join(root, "src-tauri", "Cargo.toml")], {
     maxBuffer: 256 * 1024 * 1024,
     encoding: "utf8",
   }),
@@ -61,11 +63,11 @@ below, into \`<install folder>\\licenses\\\`.
 
 | Program | Version | License | Source |
 |---|---|---|---|
-| yt-dlp | pinned in \`scripts/fetch-sidecars.ps1\` | Unlicense (public domain) — \`licenses/yt-dlp-LICENSE.txt\` | https://github.com/yt-dlp/yt-dlp |
-| FFmpeg, FFprobe (+ 7 FFmpeg DLLs) | n9.0.2 (BtbN LGPL shared build, pinned) | LGPL-3.0-or-later — \`licenses/FFmpeg-LICENSE.txt\` | Build: \`licenses/FFmpeg-SOURCE.txt\`; source: https://git.ffmpeg.org/ffmpeg.git, build scripts: https://github.com/BtbN/FFmpeg-Builds |
-| Microsoft Edge WebView2 bootstrapper | — | Microsoft Software License Terms | Installed by Windows / the bootstrapper |
+| yt-dlp | pinned in \`scripts/${linux ? "fetch-sidecars-linux.py" : "fetch-sidecars.ps1"}\` | Unlicense (public domain) — \`licenses/yt-dlp-LICENSE.txt\` | https://github.com/yt-dlp/yt-dlp |
+| FFmpeg, FFprobe ${linux ? "(static LGPL build)" : "(+ 7 FFmpeg DLLs)"} | n9.0.2 (BtbN LGPL build, pinned) | LGPL-3.0-or-later — \`${linux ? "tools" : "licenses"}/FFmpeg-LICENSE.txt\` | Build: \`${linux ? "tools" : "licenses"}/FFmpeg-SOURCE.txt\`; source: https://git.ffmpeg.org/ffmpeg.git, build scripts: https://github.com/BtbN/FFmpeg-Builds |
+${linux ? "" : "| Microsoft Edge WebView2 bootstrapper | — | Microsoft Software License Terms | Installed by Windows / the bootstrapper |"}
 
-FFmpeg is used as separate programs started by Rabbit (no static linking), and the exact build and its source are
+FFmpeg is used as separate programs started by Rabbit (no linking into Rabbit), and the exact build and its source are
 identified above, as the LGPL requires. To use a different FFmpeg build, replace the files in the install folder.
 
 ## Fonts

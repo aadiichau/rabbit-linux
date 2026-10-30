@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.1 — 2026-10-30 · First Linux release
+
+- Native Linux port of Rabbit with the same React interface, extractors, queue, library and settings.
+- Linux x86_64 AppImage, Debian and RPM packaging with bundled checksum-verified yt-dlp, FFmpeg and FFprobe.
+- Unix process groups stop the full download/conversion tree on cancellation.
+- Firefox session discovery supports standard, Flatpak and Snap profiles, with private temporary cookie files.
+- Settings → Tools installs the correct Linux yt-dlp asset and preserves checksum/version verification.
+- Correct Linux sparse-file handling and automatic WebKit renderer fallback for NVIDIA/X11 blank windows.
+- Platform-neutral notification and file-manager labels.
+- Linux CI checks frontend/backend tests and builds packages on Ubuntu 22.04.
+- Tested on CachyOS: 100 automated checks passed, plus a real GUI video download and restart persistence.
+
+
 ## 0.7.0 — 2026-10-24 · First public release; signed-in sessions (opt-in)
 
 **First public release.** Windows installer `Rabbit_0.7.0_x64-setup.exe` (Windows 10 / 11, 64-bit):

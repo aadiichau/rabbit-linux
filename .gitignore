@@ -29,3 +29,8 @@ cookies.txt
 *.cookies.txt
 *.db
 *.sqlite
+
+# Generated Linux sidecars and release artifacts
+src-tauri/binaries/linux/
+dist-release/
+__pycache__/

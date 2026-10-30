@@ -193,7 +193,13 @@ impl TempDir {
     fn new() -> AppResult<Self> {
         let n = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let path = std::env::temp_dir().join(format!("rabbit-cookies-{}-{n}", std::process::id()));
-        std::fs::create_dir_all(&path)?;
+        let mut builder = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            builder.mode(0o700);
+        }
+        builder.create(&path)?;
         Ok(TempDir { path })
     }
 }
@@ -214,7 +220,15 @@ impl TempCookieFile {
         std::fs::create_dir_all(dir)?;
         let n = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let path = dir.join(format!("session-{n}.txt"));
-        std::fs::write(&path, write_netscape(cookies))?;
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&path)?;
+        std::io::Write::write_all(&mut file, write_netscape(cookies).as_bytes())?;
         Ok(TempCookieFile { path })
     }
 }
@@ -242,15 +256,28 @@ pub struct FirefoxProfile {
 /// Profiles listed in Firefox's `profiles.ini` (classic install and the Microsoft Store package).
 pub fn firefox_profiles() -> Vec<FirefoxProfile> {
     let mut roots = Vec::new();
+    #[cfg(windows)]
     if let Some(appdata) = std::env::var_os("APPDATA") {
         roots.push(PathBuf::from(appdata).join("Mozilla").join("Firefox"));
     }
+    #[cfg(windows)]
     if let Some(local) = std::env::var_os("LOCALAPPDATA")
         && let Ok(rd) = std::fs::read_dir(PathBuf::from(local).join("Packages"))
     {
         for e in rd.flatten().filter(|e| e.file_name().to_string_lossy().starts_with("Mozilla.Firefox")) {
             roots.push(e.path().join("LocalCache").join("Roaming").join("Mozilla").join("Firefox"));
         }
+    }
+    #[cfg(target_os = "linux")]
+    if let Some(home) = std::env::var_os("HOME") {
+        let home = PathBuf::from(home);
+        roots.extend([
+            home.join(".mozilla/firefox"),
+            home.join(".var/app/org.mozilla.firefox/.mozilla/firefox"),
+            home.join("snap/firefox/common/.mozilla/firefox"),
+        ]);
+        let config = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from).unwrap_or_else(|| home.join(".config"));
+        roots.push(config.join("mozilla/firefox"));
     }
     roots.iter().flat_map(|r| std::fs::read_to_string(r.join("profiles.ini")).map(|ini| parse_profiles_ini(&ini, r)).unwrap_or_default()).collect()
 }
@@ -264,7 +291,7 @@ pub fn parse_profiles_ini(ini: &str, root: &Path) -> Vec<FirefoxProfile> {
         if section.starts_with("Profile")
             && let Some(p) = path.take()
         {
-            let full = if relative { root.join(p.replace('/', "\\")) } else { PathBuf::from(&p) };
+            let full = if relative { root.join(p.replace('\\', "/")) } else { PathBuf::from(&p) };
             let has_cookies = full.join("cookies.sqlite").is_file();
             out.push(FirefoxProfile { name: name.take().unwrap_or_else(|| p.clone()), path: full, is_default: default, has_cookies });
         }
@@ -291,7 +318,7 @@ pub fn parse_profiles_ini(ini: &str, root: &Path) -> Vec<FirefoxProfile> {
     // The [Install…] Default is the profile Firefox actually opens; prefer it as the default.
     if !install_default.is_empty() {
         for p in &mut out {
-            p.is_default = install_default.iter().any(|d| p.path.ends_with(d.replace('/', "\\")));
+            p.is_default = install_default.iter().any(|d| p.path.ends_with(d.replace('\\', "/")));
         }
     }
     out
@@ -379,12 +406,24 @@ www.douyin.com\tFALSE\t/\tFALSE\t0\tsessionid\tdy\n\
     }
 
     #[test]
+    fn linux_relative_profiles_keep_directory_separators() {
+        let root = tempfile::tempdir().unwrap();
+        let profile = root.path().join("Profiles/default");
+        std::fs::create_dir_all(&profile).unwrap();
+        std::fs::write(profile.join("cookies.sqlite"), b"").unwrap();
+        let p = parse_profiles_ini("[Install123]\nDefault=Profiles/default\n[Profile0]\nName=default\nIsRelative=1\nPath=Profiles/default\n", root.path());
+        assert_eq!(p[0].path, profile);
+        assert!(p[0].is_default);
+        assert!(p[0].has_cookies);
+    }
+
+    #[test]
     fn profiles_ini() {
         let ini = "[Install308046B0AF4A39CB]\nDefault=Profiles/abc.default-release\n\n[Profile1]\nName=default\nIsRelative=1\nPath=Profiles/xyz.default\nDefault=1\n\n[Profile0]\nName=default-release\nIsRelative=1\nPath=Profiles/abc.default-release\n";
         let p = parse_profiles_ini(ini, Path::new("C:\\FF"));
         assert_eq!(p.len(), 2);
         let def: Vec<_> = p.iter().filter(|p| p.is_default).map(|p| p.name.as_str()).collect();
         assert_eq!(def, ["default-release"], "the install default wins");
-        assert_eq!(p[1].path, Path::new("C:\\FF\\Profiles\\abc.default-release"));
+        assert_eq!(p[1].path, Path::new("C:\\FF").join("Profiles/abc.default-release"));
     }
 }

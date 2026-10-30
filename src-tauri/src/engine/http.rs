@@ -103,6 +103,10 @@ async fn sleep_or_cancel(d: Duration, cancel: &CancellationToken) -> AppResult<(
     }
 }
 
+// Unix files already support sparse gaps after set_len/seek; no NTFS-style flag is needed.
+#[cfg(not(windows))]
+fn set_sparse(_file: &std::fs::File, _sparse: bool) {}
+
 #[cfg(windows)]
 fn set_sparse(file: &std::fs::File, sparse: bool) {
     use std::os::windows::io::AsRawHandle;

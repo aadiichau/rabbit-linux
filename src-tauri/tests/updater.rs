@@ -16,7 +16,7 @@ use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 
 fn real_ytdlp() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("binaries/yt-dlp-x86_64-pc-windows-msvc.exe")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(if cfg!(windows) { "binaries/yt-dlp-x86_64-pc-windows-msvc.exe" } else { "binaries/linux/yt-dlp" })
 }
 
 fn sha_hex(bytes: &[u8]) -> String {
@@ -64,8 +64,8 @@ async fn serve(routes: HashMap<String, Vec<u8>>) -> String {
 fn release(api_tag: &str, tag: &str, exe: &[u8], sums_hash: &str) -> HashMap<String, Vec<u8>> {
     let mut r = HashMap::new();
     r.insert("/repos/yt-dlp/yt-dlp/releases/latest".into(), format!(r#"{{"tag_name":"{api_tag}","published_at":"2026-10-21T21:54:37Z","prerelease":false,"draft":false}}"#).into_bytes());
-    r.insert(format!("/yt-dlp/yt-dlp/releases/download/{tag}/SHA2-256SUMS"), format!("{}  yt-dlp\n{sums_hash}  yt-dlp.exe\n", "0".repeat(64)).into_bytes());
-    r.insert(format!("/yt-dlp/yt-dlp/releases/download/{tag}/yt-dlp.exe"), exe.to_vec());
+    r.insert(format!("/yt-dlp/yt-dlp/releases/download/{tag}/SHA2-256SUMS"), format!("{}  yt-dlp\n{sums_hash}  {}\n", "0".repeat(64), updater::asset_name()).into_bytes());
+    r.insert(format!("/yt-dlp/yt-dlp/releases/download/{tag}/{}", updater::asset_name()), exe.to_vec());
     r
 }
 
@@ -105,7 +105,7 @@ async fn verified_install_switches_live_and_reverts() {
     assert_eq!(after.source, "update");
     assert_eq!(after.version.as_deref(), Some("2026.10.21"));
     let active = m.tools().ytdlp.unwrap();
-    assert_eq!(active, dir.path().join("bin").join("yt-dlp-2026.10.21.exe"), "new operations use the updated copy");
+    assert_eq!(active, dir.path().join("bin").join(updater::installed_filename("2026.10.21")), "new operations use the updated copy");
     assert_eq!(after.update.unwrap().sha256, sha_hex(&exe));
 
     // A fresh manager (app restart) picks the update up from the manifest.
@@ -115,7 +115,7 @@ async fn verified_install_switches_live_and_reverts() {
     let reverted = m.ytdlp_use_bundled().await.unwrap();
     assert_eq!(reverted.source, "bundled");
     assert_eq!(m.tools().ytdlp.unwrap(), real_ytdlp());
-    assert!(exe_files(&dir.path().join("bin")).iter().all(|f| !f.ends_with(".exe")), "updated copies are removed on revert");
+    assert!(exe_files(&dir.path().join("bin")).iter().all(|f| !f.starts_with("yt-dlp-")), "updated copies are removed on revert");
 }
 
 #[tokio::test]
@@ -144,7 +144,7 @@ async fn binary_reporting_another_version_is_rejected() {
     let err = updater::install(&reqwest::Client::new(), &src, Channel::Stable, "2026.10.30", &dir.path().join("bin"), &counters, &CancellationToken::new()).await.unwrap_err();
     assert!(err.to_string().contains("reports version 2026.10.21"), "{err}");
     assert!(updater::active(&dir.path().join("bin")).is_none());
-    assert!(exe_files(&dir.path().join("bin")).iter().all(|f| !f.ends_with(".exe")));
+    assert!(exe_files(&dir.path().join("bin")).iter().all(|f| !f.starts_with("yt-dlp-")));
 }
 
 /// Real GitHub: check both channels, install the nightly (verified) into a temp folder, then try
