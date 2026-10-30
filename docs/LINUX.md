@@ -58,7 +58,9 @@ a newer distribution may require a newer glibc; the Linux workflow builds on Ubu
 for broader compatibility. Native packages require the distribution's GTK3 and WebKitGTK 4.1.
 
 The **Linux** GitHub Actions workflow runs the tests and builds `.AppImage`, `.deb` and `.rpm`
-artifacts with checksums. It can also be started manually; it does not publish releases.
+artifacts with checksums. It can also be started manually. The **Stage Linux release** workflow
+can verify packages from a successful Linux run and create an unpublished draft; the AppImage
+is tested before the draft is published.
 
 ## Desktop integration and data
 
@@ -90,5 +92,6 @@ Live site tests remain opt-in (`-- --ignored`) and depend on site availability.
 
 Local validation on CachyOS (2026-10-30): **100 automated tests passed**, the native desktop
 executable built, and a real download completed through the interface and appeared as Verified.
-The app rendered on native Wayland and on NVIDIA/XWayland with its automatic compatibility fallback.
+The actual optimized release AppImage also passed native Wayland and NVIDIA/XWayland startup,
+GUI video merging, MP3 conversion, output verification and persistence checks.
 Full details and remaining packaging/platform checks: [Linux test results](LINUX_TEST_RESULTS.md).

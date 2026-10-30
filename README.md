@@ -85,7 +85,7 @@ chmod +x Rabbit_0.7.1_amd64.AppImage
 ```
 
 If FUSE is unavailable, run `./Rabbit_0.7.1_amd64.AppImage --appimage-extract-and-run`.
-Check downloads with `sha256sum --check SHA256SUMS-linux.txt` from the folder containing the packages.
+Check downloads with `sha256sum --ignore-missing --check SHA256SUMS-linux.txt` from the folder containing the packages.
 
 The packages include Linux yt-dlp, FFmpeg and FFprobe. Keep Node.js 24+ or Deno available for
 YouTube JavaScript challenges. GTK3 and WebKitGTK 4.1 are required for native packages; AppImage bundles

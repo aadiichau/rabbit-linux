@@ -53,11 +53,36 @@ settings and library were not modified.
    the user explicitly set `WEBKIT_DISABLE_DMABUF_RENDERER`. Native Wayland is unaffected.
 3. Queue and Library actions now say **Show in folder** instead of naming Windows Explorer.
 
+## Release 0.7.1 package checks
+
+The published [v0.7.1 Linux release](https://github.com/aadiichau/rabbit-linux/releases/tag/v0.7.1)
+was built from commit `f2026f0fbe6d9b4ff45e4cf520e3a64644b0f857` on Ubuntu 22.04.
+[Linux CI](https://github.com/aadiichau/rabbit-linux/actions/runs/40980515434) and
+[Windows/frontend CI](https://github.com/aadiichau/rabbit-linux/actions/runs/40980515485) passed.
+
+The [release staging audit](https://github.com/aadiichau/rabbit-linux/actions/runs/40982810182)
+verified all three package checksums, package versions, Debian/RPM metadata, license resources,
+and executable permissions for the private yt-dlp, FFmpeg and FFprobe binaries.
+The AppImage downloaded from the staged release matched SHA-256
+`925c0a4ff97f35cc4d5545d494ef6ac6683dadd63c735fbb0092d12f02f0775c`.
+
+The optimized release AppImage was tested with `--appimage-extract-and-run` on CachyOS:
+
+- Native Wayland and NVIDIA/XWayland windows rendered correctly; the X11 fallback worked automatically.
+- All media tools were discovered inside the AppImage's private resources.
+- A real GUI download merged video/audio into a 744,412-byte MP4; bundled FFprobe confirmed
+  320×240 video, audio, and approximately 19.06 seconds of duration.
+- A second GUI download converted audio into a 163,334-byte MP3, confirmed with bundled FFprobe.
+- Both tasks displayed **Verified**, with zero failures, and both remained in Queue and Library after restart.
+
+![Release AppImage with verified video and MP3 downloads](assets/rabbit-linux-release.png)
+
 ## Scope and remaining checks
 
-The tested executable is `src-tauri/target/debug/rabbit`, with private tools in the adjacent
-`tools` directory. It is a development build, not a release installer. AppImage, Debian and
-RPM package installation have not been tested. Windows was not rebuilt in this session.
+The earlier development checks used `src-tauri/target/debug/rabbit`; the additional checks above
+used the actual optimized release AppImage. Debian/RPM package contents and permissions were audited,
+but installation on Debian or RPM distributions was not tested on this CachyOS host.
+Windows CI compiled and tested the source; a Windows desktop smoke test was not performed.
 
 Only the public YouTube sample was downloaded live. The remaining opt-in live platform,
 benchmark and signed-in-session tests were not run; these results do not establish live
